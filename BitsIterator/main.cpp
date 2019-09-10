@@ -10,8 +10,8 @@ int main()
 	if (!ifs) {
 		std::cout << "Unable to open file!\n";
 		return -1;
-	}
-	;
+	};
+
 	std::for_each(IstreamBitsIterator(ifs), IstreamBitsIterator(), [](const bool currBit) {
 		std::cout << currBit;
 	});
