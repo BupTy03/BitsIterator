@@ -26,7 +26,7 @@ int main()
 	std::cout << "'";
 	OstreamBitsIterator it(std::cout);
 	std::copy(std::cbegin(arr), std::cend(arr), it);
-	it.flush();
+	flush(it);
 	std::cout << "'\n";
 
 	return 0;
