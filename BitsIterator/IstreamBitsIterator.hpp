@@ -2,8 +2,10 @@
 #ifndef ISTREAM_BITS_ITERATOR
 #define ISTREAM_BITS_ITERATOR
 
-#include <iostream>
-#include <cassert>
+#include <istream>
+
+class IstreamBitsIterator;
+bool is_last_byte(const IstreamBitsIterator& it);
 
 class IstreamBitsIterator
 {
@@ -16,9 +18,6 @@ public:
 		if (*stream_) {
 			stream_->read(reinterpret_cast<char*>(&currByte_), 1);
 		}
-		else {
-			stream_ = nullptr;
-		}
 	}
 
 	IstreamBitsIterator& operator++()
@@ -28,9 +27,11 @@ public:
 			currByte_ = 0;
 			currBitIndex_ = 0;
 
-			assert(stream_ != nullptr);
+			if (stream_ == nullptr) {
+				return *this;
+			}
 			stream_->read(reinterpret_cast<char*>(&currByte_), 1);
-			if (is_last_byte()) {
+			if (!(*stream_)) {
 				stream_ = nullptr;
 				return *this;
 			}
@@ -52,13 +53,15 @@ public:
 
 	bool operator*() const { return currByte_ & (1 << (BITS_IN_BYTE - currBitIndex_ - 1)); }
 
-	bool is_last_byte() const { return stream_ == nullptr || !(*stream_); }
+	bool isLastByte() const { return stream_ == nullptr || !(*stream_); }
 
 private:
 	std::istream* stream_ = nullptr;
 	std::uint8_t currByte_ = 0;
 	std::uint8_t currBitIndex_ = 0;
 };
+
+bool is_last_byte(const IstreamBitsIterator& it)  { return it.isLastByte(); }
 
 
 #endif // !ISTREAM_BITS_ITERATOR
