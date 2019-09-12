@@ -23,18 +23,21 @@ public:
 	IstreamBitsIterator& operator++()
 	{
 		++currBitIndex_;
-		if (currBitIndex_ >= 8) {
+		if (currBitIndex_ >= BITS_IN_BYTE) {
 			currByte_ = 0;
 			currBitIndex_ = 0;
 
-			if (stream_ == nullptr) {
-				return *this;
-			}
-			stream_->read(reinterpret_cast<char*>(&currByte_), 1);
 			if (!(*stream_)) {
 				stream_ = nullptr;
 				return *this;
 			}
+			stream_->read(reinterpret_cast<char*>(&currByte_), 1);
+			stream_->get();
+			if (!(*stream_)) {
+				stream_ = nullptr;
+				return *this;
+			}
+			stream_->unget();
 		}
 		return *this;
 	}
