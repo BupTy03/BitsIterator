@@ -125,6 +125,7 @@
   <ItemGroup>
     <ClInclude Include="IstreamBitsIterator.hpp" />
     <ClInclude Include="OstreamBitsIterator.hpp" />
+    <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

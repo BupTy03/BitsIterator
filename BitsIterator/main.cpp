@@ -9,7 +9,8 @@
 
 int main()
 {
-	std::ifstream ifs("D:\\USER\\Documents\\text.txt", std::ios::in | std::ios::binary);
+#if 0
+	std::ifstream ifs("D:\\USER\\Documents\\test.txt", std::ios::in | std::ios::binary);
 	if (!ifs) {
 		std::cout << "Unable to open file!\n";
 		return -1;
@@ -35,16 +36,17 @@ int main()
 	});
 	std::cout << std::endl;*/
 
-#if 0
+#endif
+
 	bool arr[]{ 0,1,0,0,1,0,0,0, 0,1,1,0,0,1,0,1, 0,1,1,0,1,1,0,0, 0,1,1,0,1,1,0,0, 0,1,1,0,1,1,1,1, 0,0,1,0,1,1,0,0, 0,0,1,0,0,0,0,0,
 		0,1,1,1,0,1,1,1, 0,1,1,0,1,1,1,1, 0,1,1,1,0,0,1,0, 0,1,1,0,1,1,0,0, 0,1,1,0,0,1,0,0, 0,0,1,0,0,0,0,1 };
 	std::cout << "'";
 	OstreamBitsIterator it(std::cout);
 	std::copy(std::cbegin(arr), std::cend(arr), it);
-	flush(it);
+	it.flush();
 	std::cout << "'\n";
 
-#endif
+
 
 	return 0;
 }

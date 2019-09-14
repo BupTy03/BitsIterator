@@ -1,70 +1,117 @@
-#pragma once
-#ifndef ISTREAM_BITS_ITERATOR
-#define ISTREAM_BITS_ITERATOR
+#ifndef ISTREAMBITSITERATOR_HPP
+#define ISTREAMBITSITERATOR_HPP
+
+#include "utils.hpp"
 
 #include <istream>
-
-class IstreamBitsIterator;
-bool is_last_byte(const IstreamBitsIterator& it);
+#include <cassert>
+#include <memory>
 
 class IstreamBitsIterator
+	: public std::iterator<
+	std::input_iterator_tag,
+	bool,
+	std::ptrdiff_t,
+	const bool*,
+	const bool&>
 {
 public:
-	static constexpr int BITS_IN_BYTE = 8;
+	using value_type = bool;
 
 	explicit IstreamBitsIterator() {}
-	explicit IstreamBitsIterator(std::istream& is) : stream_{ &is }
+	explicit IstreamBitsIterator(std::istream& is)
+		: stream_{ &is }
+		, state_{ std::make_shared<current_state>() }
 	{
 		if (*stream_) {
-			stream_->read(reinterpret_cast<char*>(&currByte_), 1);
+			read(*stream_, state_->currByte);
 		}
+	}
+
+	bool isLastByte() const
+	{
+		if (stream_ == nullptr) {
+			return true;
+		}
+
+		stream_->get();
+		const bool result = !bool(*stream_);
+		stream_->unget();
+		stream_->clear();
+
+		return result;
+	}
+	std::uint8_t currentBit() const
+	{
+		assert(state_ != nullptr);
+		return state_->currBitIndex;
 	}
 
 	IstreamBitsIterator& operator++()
 	{
-		++currBitIndex_;
-		if (currBitIndex_ >= BITS_IN_BYTE) {
-			currByte_ = 0;
-			currBitIndex_ = 0;
+		++(state_->currBitIndex);
+		if (state_->currBitIndex >= BITS_IN_BYTE) {
+			state_->currByte = 0;
+			state_->currBitIndex = 0;
 
+			read(*stream_, state_->currByte);
 			if (!(*stream_)) {
 				stream_ = nullptr;
 				return *this;
 			}
-			stream_->read(reinterpret_cast<char*>(&currByte_), 1);
-			stream_->get();
-			if (!(*stream_)) {
-				stream_ = nullptr;
-				return *this;
-			}
-			stream_->unget();
 		}
 		return *this;
 	}
-	IstreamBitsIterator operator++(int) { auto retval = *this; ++(*this); return retval; }
+	IstreamBitsIterator operator++(int)
+	{
+		auto retval = *this;
+		++(*this);
+		return retval;
+	}
+	IstreamBitsIterator& operator+=(std::ptrdiff_t off)
+	{
+		assert(stream_ != nullptr);
+		assert(state_ != nullptr);
+
+		const auto countBytes = off / BITS_IN_BYTE;
+		const auto countBits = off % BITS_IN_BYTE;
+
+		if (countBytes != 0) {
+			stream_->seekg(stream_->tellg() + std::istream::streampos(countBytes));
+			read(*stream_, state_->currByte);
+		}
+
+		state_->currByte = 0;
+		state_->currBitIndex = static_cast<std::uint8_t>((countBits >= 0) ? countBits : BITS_IN_BYTE + countBits);
+		return *this;
+	}
 
 	bool operator==(IstreamBitsIterator other) const
 	{
 		if (stream_ == nullptr || other.stream_ == nullptr) {
 			return stream_ == other.stream_;
 		}
-
-		return stream_->tellg() == other.stream_->tellg() && currBitIndex_ == other.currBitIndex_;
+		assert(state_);
+		return stream_->tellg() == other.stream_->tellg() && state_->currBitIndex == other.state_->currBitIndex;
 	}
 
 	bool operator!=(IstreamBitsIterator other) const { return !(*this == other); }
 
-	bool operator*() const { return currByte_ & (1 << (BITS_IN_BYTE - currBitIndex_ - 1)); }
+	bool operator*() const
+	{
+		assert(state_ != nullptr);
+		return state_->currByte & (1 << (BITS_IN_BYTE - state_->currBitIndex - 1));
+	}
 
-	bool isLastByte() const { return stream_ == nullptr || !(*stream_); }
+private:
+	struct current_state {
+		std::uint8_t currByte = 0;
+		std::uint8_t currBitIndex = 0;
+	};
 
 private:
 	std::istream* stream_ = nullptr;
-	std::uint8_t currByte_ = 0;
-	std::uint8_t currBitIndex_ = 0;
+	std::shared_ptr<current_state> state_;
 };
 
-bool is_last_byte(const IstreamBitsIterator& it)  { return it.isLastByte(); }
-
-
-#endif // !ISTREAM_BITS_ITERATOR
+#endif // ISTREAMBITSITERATOR_HPP
